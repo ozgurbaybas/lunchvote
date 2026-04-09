@@ -6,8 +6,10 @@ import (
 	"net/http"
 	"os/signal"
 	"syscall"
-	"time"
 
+	identityapp "github.com/ozgurbaybas/lunchvote/modules/identity/application"
+	identitypostgres "github.com/ozgurbaybas/lunchvote/modules/identity/infrastructure/postgres"
+	identityhttp "github.com/ozgurbaybas/lunchvote/modules/identity/interfaces/http"
 	"github.com/ozgurbaybas/lunchvote/platform/config"
 	"github.com/ozgurbaybas/lunchvote/platform/httpserver"
 	"github.com/ozgurbaybas/lunchvote/platform/logger"
@@ -31,7 +33,18 @@ func New(ctx context.Context) (*App, error) {
 		return nil, fmt.Errorf("create postgres connection: %w", err)
 	}
 
-	server := httpserver.New(cfg, logg)
+	userRepo := identitypostgres.NewUserRepository(db.Pool)
+	teamRepo := identitypostgres.NewTeamRepository(db.Pool)
+	identityService := identityapp.NewService(userRepo, teamRepo, nil)
+	identityHandler := identityhttp.NewHandler(identityService)
+
+	server := httpserver.New(
+		cfg,
+		logg,
+		func(mux *http.ServeMux) {
+			identityhttp.RegisterRoutes(mux, identityHandler)
+		},
+	)
 
 	return &App{
 		cfg:    cfg,
@@ -61,29 +74,15 @@ func (a *App) Run(ctx context.Context) error {
 	case <-ctx.Done():
 		a.logger.Info("shutdown signal received")
 
-		shutdownCtx, cancel := context.WithTimeout(context.Background(), a.cfg.AppShutdownTimeout)
-		defer cancel()
-
-		if err := a.server.Shutdown(shutdownCtx); err != nil {
+		if err := a.server.Shutdown(context.Background()); err != nil {
 			return fmt.Errorf("shutdown http server: %w", err)
 		}
 
-		if err := a.db.Close(shutdownCtx); err != nil {
+		if err := a.db.Close(context.Background()); err != nil {
 			return fmt.Errorf("close postgres connection: %w", err)
 		}
 
 		a.logger.Info("application stopped")
 		return nil
 	}
-}
-
-func (a *App) Close(ctx context.Context) error {
-	timeoutCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
-	defer cancel()
-
-	if err := a.server.Shutdown(timeoutCtx); err != nil {
-		return err
-	}
-
-	return a.db.Close(timeoutCtx)
 }

@@ -12,12 +12,20 @@ type healthResponse struct {
 	Status string `json:"status"`
 }
 
-func New(cfg config.Config, logg *logger.Logger) *http.Server {
+func New(
+	cfg config.Config,
+	logg *logger.Logger,
+	registerRoutes ...func(mux *http.ServeMux),
+) *http.Server {
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("GET /health", func(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusOK, healthResponse{Status: "ok"})
 	})
+
+	for _, register := range registerRoutes {
+		register(mux)
+	}
 
 	return &http.Server{
 		Addr:    cfg.HTTPAddress(),
@@ -35,6 +43,5 @@ func withLogging(logg *logger.Logger, next http.Handler) http.Handler {
 func writeJSON(w http.ResponseWriter, status int, payload any) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
-
 	_ = json.NewEncoder(w).Encode(payload)
 }
