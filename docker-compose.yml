@@ -1,0 +1,22 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:17
+    container_name: lunchvote-postgres
+    environment:
+      POSTGRES_DB: lunchvote
+      POSTGRES_USER: lunchvote
+      POSTGRES_PASSWORD: lunchvote
+    ports:
+      - "5433:5432"
+    volumes:
+      - lunchvote_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U lunchvote -d lunchvote" ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  lunchvote_postgres_data:

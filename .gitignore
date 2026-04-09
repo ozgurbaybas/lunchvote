@@ -1,0 +1,9 @@
+bin/
+dist/
+coverage.out
+.coverage
+.env
+.idea/
+.vscode/
+*.log
+.DS_Store
