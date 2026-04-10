@@ -9,4 +9,5 @@ var (
 	ErrInvalidRestaurantDistrict = errors.New("invalid restaurant district")
 	ErrInvalidMealCard           = errors.New("invalid meal card")
 	ErrDuplicateMealCard         = errors.New("duplicate meal card")
+	ErrRestaurantNotFound        = errors.New("restaurant not found")
 )
