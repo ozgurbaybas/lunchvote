@@ -11,6 +11,9 @@ import (
 	identityapp "github.com/ozgurbaybas/lunchvote/modules/identity/application"
 	identitypostgres "github.com/ozgurbaybas/lunchvote/modules/identity/infrastructure/postgres"
 	identityhttp "github.com/ozgurbaybas/lunchvote/modules/identity/interfaces/http"
+	pollapp "github.com/ozgurbaybas/lunchvote/modules/poll/application"
+	pollpostgres "github.com/ozgurbaybas/lunchvote/modules/poll/infrastructure/postgres"
+	pollhttp "github.com/ozgurbaybas/lunchvote/modules/poll/interfaces/http"
 	ratingapp "github.com/ozgurbaybas/lunchvote/modules/rating/application"
 	ratingpostgres "github.com/ozgurbaybas/lunchvote/modules/rating/infrastructure/postgres"
 	ratinghttp "github.com/ozgurbaybas/lunchvote/modules/rating/interfaces/http"
@@ -53,6 +56,10 @@ func New(ctx context.Context) (*App, error) {
 	ratingService := ratingapp.NewService(ratingRepo, userRepo, restaurantRepo, nil)
 	ratingHandler := ratinghttp.NewHandler(ratingService)
 
+	pollRepo := pollpostgres.NewRepository(db.Pool)
+	pollService := pollapp.NewService(pollRepo, teamRepo, nil)
+	pollHandler := pollhttp.NewHandler(pollService)
+
 	server := httpserver.New(
 		cfg,
 		logg,
@@ -64,6 +71,9 @@ func New(ctx context.Context) (*App, error) {
 		},
 		func(mux *http.ServeMux) {
 			ratinghttp.RegisterRoutes(mux, ratingHandler)
+		},
+		func(mux *http.ServeMux) {
+			pollhttp.RegisterRoutes(mux, pollHandler)
 		},
 	)
 
