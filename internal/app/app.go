@@ -17,6 +17,8 @@ import (
 	ratingapp "github.com/ozgurbaybas/lunchvote/modules/rating/application"
 	ratingpostgres "github.com/ozgurbaybas/lunchvote/modules/rating/infrastructure/postgres"
 	ratinghttp "github.com/ozgurbaybas/lunchvote/modules/rating/interfaces/http"
+	recommendationapp "github.com/ozgurbaybas/lunchvote/modules/recommendation/application"
+	recommendationhttp "github.com/ozgurbaybas/lunchvote/modules/recommendation/interfaces/http"
 	restaurantapp "github.com/ozgurbaybas/lunchvote/modules/restaurant/application"
 	restaurantpostgres "github.com/ozgurbaybas/lunchvote/modules/restaurant/infrastructure/postgres"
 	restauranthttp "github.com/ozgurbaybas/lunchvote/modules/restaurant/interfaces/http"
@@ -60,6 +62,9 @@ func New(ctx context.Context) (*App, error) {
 	pollService := pollapp.NewService(pollRepo, teamRepo, nil)
 	pollHandler := pollhttp.NewHandler(pollService)
 
+	recommendationService := recommendationapp.NewService(teamRepo, restaurantRepo, ratingRepo, pollRepo)
+	recommendationHandler := recommendationhttp.NewHandler(recommendationService)
+
 	server := httpserver.New(
 		cfg,
 		logg,
@@ -74,6 +79,9 @@ func New(ctx context.Context) (*App, error) {
 		},
 		func(mux *http.ServeMux) {
 			pollhttp.RegisterRoutes(mux, pollHandler)
+		},
+		func(mux *http.ServeMux) {
+			recommendationhttp.RegisterRoutes(mux, recommendationHandler)
 		},
 	)
 

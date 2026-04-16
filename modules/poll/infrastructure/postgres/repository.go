@@ -172,3 +172,39 @@ func (r *Repository) GetByID(ctx context.Context, id string) (polldomain.Poll, e
 
 	return poll, nil
 }
+
+func (r *Repository) ListByTeamID(ctx context.Context, teamID string) ([]polldomain.Poll, error) {
+	const query = `
+		SELECT id
+		FROM polls
+		WHERE team_id = $1
+		ORDER BY created_at ASC
+	`
+
+	rows, err := r.db.Query(ctx, query, teamID)
+	if err != nil {
+		return nil, fmt.Errorf("list polls by team: %w", err)
+	}
+	defer rows.Close()
+
+	polls := make([]polldomain.Poll, 0)
+	for rows.Next() {
+		var pollID string
+		if err := rows.Scan(&pollID); err != nil {
+			return nil, fmt.Errorf("scan poll id: %w", err)
+		}
+
+		poll, err := r.GetByID(ctx, pollID)
+		if err != nil {
+			return nil, fmt.Errorf("get poll by id from list: %w", err)
+		}
+
+		polls = append(polls, poll)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate polls by team: %w", err)
+	}
+
+	return polls, nil
+}
