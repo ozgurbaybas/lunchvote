@@ -11,6 +11,9 @@ import (
 	identityapp "github.com/ozgurbaybas/lunchvote/modules/identity/application"
 	identitypostgres "github.com/ozgurbaybas/lunchvote/modules/identity/infrastructure/postgres"
 	identityhttp "github.com/ozgurbaybas/lunchvote/modules/identity/interfaces/http"
+	ratingapp "github.com/ozgurbaybas/lunchvote/modules/rating/application"
+	ratingpostgres "github.com/ozgurbaybas/lunchvote/modules/rating/infrastructure/postgres"
+	ratinghttp "github.com/ozgurbaybas/lunchvote/modules/rating/interfaces/http"
 	restaurantapp "github.com/ozgurbaybas/lunchvote/modules/restaurant/application"
 	restaurantpostgres "github.com/ozgurbaybas/lunchvote/modules/restaurant/infrastructure/postgres"
 	restauranthttp "github.com/ozgurbaybas/lunchvote/modules/restaurant/interfaces/http"
@@ -46,6 +49,10 @@ func New(ctx context.Context) (*App, error) {
 	restaurantService := restaurantapp.NewService(restaurantRepo, nil)
 	restaurantHandler := restauranthttp.NewHandler(restaurantService)
 
+	ratingRepo := ratingpostgres.NewRepository(db.Pool)
+	ratingService := ratingapp.NewService(ratingRepo, userRepo, restaurantRepo, nil)
+	ratingHandler := ratinghttp.NewHandler(ratingService)
+
 	server := httpserver.New(
 		cfg,
 		logg,
@@ -54,6 +61,9 @@ func New(ctx context.Context) (*App, error) {
 		},
 		func(mux *http.ServeMux) {
 			restauranthttp.RegisterRoutes(mux, restaurantHandler)
+		},
+		func(mux *http.ServeMux) {
+			ratinghttp.RegisterRoutes(mux, ratingHandler)
 		},
 	)
 
