@@ -2,10 +2,6 @@ package http
 
 import "github.com/ozgurbaybas/lunchvote/modules/identity/domain"
 
-type errorResponse struct {
-	Error string `json:"error"`
-}
-
 type userResponse struct {
 	ID        string `json:"id"`
 	Name      string `json:"name"`

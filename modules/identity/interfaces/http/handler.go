@@ -8,6 +8,7 @@ import (
 
 	"github.com/ozgurbaybas/lunchvote/modules/identity/application"
 	"github.com/ozgurbaybas/lunchvote/modules/identity/domain"
+	"github.com/ozgurbaybas/lunchvote/platform/httpserver"
 )
 
 type Handler struct {
@@ -21,12 +22,12 @@ func NewHandler(service *application.Service) *Handler {
 func (h *Handler) CreateUser(w http.ResponseWriter, r *http.Request) {
 	var req createUserRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+		httpserver.WriteError(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
 
 	if strings.TrimSpace(req.ID) == "" || strings.TrimSpace(req.Name) == "" || strings.TrimSpace(req.Email) == "" {
-		writeError(w, http.StatusBadRequest, "id, name and email are required")
+		httpserver.WriteError(w, http.StatusBadRequest, "id, name and email are required")
 		return
 	}
 
@@ -38,29 +39,29 @@ func (h *Handler) CreateUser(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		switch {
 		case errors.Is(err, application.ErrUserEmailAlreadyExists):
-			writeError(w, http.StatusConflict, err.Error())
+			httpserver.WriteError(w, http.StatusConflict, err.Error())
 		case errors.Is(err, domain.ErrInvalidUserID),
 			errors.Is(err, domain.ErrInvalidUserName),
 			errors.Is(err, domain.ErrInvalidUserEmail):
-			writeError(w, http.StatusBadRequest, err.Error())
+			httpserver.WriteError(w, http.StatusBadRequest, err.Error())
 		default:
-			writeError(w, http.StatusInternalServerError, "internal server error")
+			httpserver.WriteError(w, http.StatusInternalServerError, "internal server error")
 		}
 		return
 	}
 
-	writeJSON(w, http.StatusCreated, toUserResponse(user))
+	httpserver.WriteJSON(w, http.StatusCreated, toUserResponse(user))
 }
 
 func (h *Handler) CreateTeam(w http.ResponseWriter, r *http.Request) {
 	var req createTeamRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+		httpserver.WriteError(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
 
 	if strings.TrimSpace(req.ID) == "" || strings.TrimSpace(req.Name) == "" || strings.TrimSpace(req.OwnerID) == "" {
-		writeError(w, http.StatusBadRequest, "id, name and owner_id are required")
+		httpserver.WriteError(w, http.StatusBadRequest, "id, name and owner_id are required")
 		return
 	}
 
@@ -72,35 +73,35 @@ func (h *Handler) CreateTeam(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		switch {
 		case errors.Is(err, domain.ErrUserNotFound):
-			writeError(w, http.StatusNotFound, err.Error())
+			httpserver.WriteError(w, http.StatusNotFound, err.Error())
 		case errors.Is(err, domain.ErrInvalidTeamID),
 			errors.Is(err, domain.ErrInvalidTeamName),
 			errors.Is(err, domain.ErrInvalidOwnerID):
-			writeError(w, http.StatusBadRequest, err.Error())
+			httpserver.WriteError(w, http.StatusBadRequest, err.Error())
 		default:
-			writeError(w, http.StatusInternalServerError, "internal server error")
+			httpserver.WriteError(w, http.StatusInternalServerError, "internal server error")
 		}
 		return
 	}
 
-	writeJSON(w, http.StatusCreated, toTeamResponse(team))
+	httpserver.WriteJSON(w, http.StatusCreated, toTeamResponse(team))
 }
 
 func (h *Handler) AddTeamMember(w http.ResponseWriter, r *http.Request) {
 	teamID := strings.TrimSpace(r.PathValue("id"))
 	if teamID == "" {
-		writeError(w, http.StatusBadRequest, "team id is required")
+		httpserver.WriteError(w, http.StatusBadRequest, "team id is required")
 		return
 	}
 
 	var req addTeamMemberRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+		httpserver.WriteError(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
 
 	if strings.TrimSpace(req.UserID) == "" {
-		writeError(w, http.StatusBadRequest, "user_id is required")
+		httpserver.WriteError(w, http.StatusBadRequest, "user_id is required")
 		return
 	}
 
@@ -111,26 +112,16 @@ func (h *Handler) AddTeamMember(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		switch {
 		case errors.Is(err, domain.ErrTeamNotFound), errors.Is(err, domain.ErrUserNotFound):
-			writeError(w, http.StatusNotFound, err.Error())
+			httpserver.WriteError(w, http.StatusNotFound, err.Error())
 		case errors.Is(err, domain.ErrMemberAlreadyExists):
-			writeError(w, http.StatusConflict, err.Error())
+			httpserver.WriteError(w, http.StatusConflict, err.Error())
 		case errors.Is(err, domain.ErrInvalidUserID):
-			writeError(w, http.StatusBadRequest, err.Error())
+			httpserver.WriteError(w, http.StatusBadRequest, err.Error())
 		default:
-			writeError(w, http.StatusInternalServerError, "internal server error")
+			httpserver.WriteError(w, http.StatusInternalServerError, "internal server error")
 		}
 		return
 	}
 
-	writeJSON(w, http.StatusOK, toTeamResponse(team))
-}
-
-func writeError(w http.ResponseWriter, status int, message string) {
-	writeJSON(w, status, errorResponse{Error: message})
-}
-
-func writeJSON(w http.ResponseWriter, status int, payload any) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(status)
-	_ = json.NewEncoder(w).Encode(payload)
+	httpserver.WriteJSON(w, http.StatusOK, toTeamResponse(team))
 }

@@ -2,10 +2,6 @@ package http
 
 import "github.com/ozgurbaybas/lunchvote/modules/restaurant/domain"
 
-type errorResponse struct {
-	Error string `json:"error"`
-}
-
 type restaurantResponse struct {
 	ID                 string   `json:"id"`
 	Name               string   `json:"name"`

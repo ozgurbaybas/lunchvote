@@ -2,10 +2,6 @@ package http
 
 import polldomain "github.com/ozgurbaybas/lunchvote/modules/poll/domain"
 
-type errorResponse struct {
-	Error string `json:"error"`
-}
-
 type pollOptionResponse struct {
 	RestaurantID string `json:"restaurant_id"`
 }

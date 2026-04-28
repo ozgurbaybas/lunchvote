@@ -1,7 +1,6 @@
 package http
 
 import (
-	"encoding/json"
 	"errors"
 	"net/http"
 	"strconv"
@@ -9,6 +8,7 @@ import (
 
 	identitydomain "github.com/ozgurbaybas/lunchvote/modules/identity/domain"
 	recommendationapp "github.com/ozgurbaybas/lunchvote/modules/recommendation/application"
+	"github.com/ozgurbaybas/lunchvote/platform/httpserver"
 )
 
 type Handler struct {
@@ -22,7 +22,7 @@ func NewHandler(service *recommendationapp.Service) *Handler {
 func (h *Handler) RecommendRestaurants(w http.ResponseWriter, r *http.Request) {
 	teamID := strings.TrimSpace(r.PathValue("id"))
 	if teamID == "" {
-		writeError(w, http.StatusBadRequest, "team id is required")
+		httpserver.WriteError(w, http.StatusBadRequest, "team id is required")
 		return
 	}
 
@@ -30,7 +30,7 @@ func (h *Handler) RecommendRestaurants(w http.ResponseWriter, r *http.Request) {
 	if rawLimit := strings.TrimSpace(r.URL.Query().Get("limit")); rawLimit != "" {
 		parsed, err := strconv.Atoi(rawLimit)
 		if err != nil || parsed < 0 {
-			writeError(w, http.StatusBadRequest, "limit must be a non-negative integer")
+			httpserver.WriteError(w, http.StatusBadRequest, "limit must be a non-negative integer")
 			return
 		}
 		limit = parsed
@@ -43,9 +43,9 @@ func (h *Handler) RecommendRestaurants(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		switch {
 		case errors.Is(err, identitydomain.ErrTeamNotFound):
-			writeError(w, http.StatusNotFound, err.Error())
+			httpserver.WriteError(w, http.StatusNotFound, err.Error())
 		default:
-			writeError(w, http.StatusInternalServerError, "internal server error")
+			httpserver.WriteError(w, http.StatusInternalServerError, "internal server error")
 		}
 		return
 	}
@@ -55,15 +55,5 @@ func (h *Handler) RecommendRestaurants(w http.ResponseWriter, r *http.Request) {
 		response = append(response, toRecommendationResponse(item))
 	}
 
-	writeJSON(w, http.StatusOK, response)
-}
-
-func writeError(w http.ResponseWriter, status int, message string) {
-	writeJSON(w, status, errorResponse{Error: message})
-}
-
-func writeJSON(w http.ResponseWriter, status int, payload any) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(status)
-	_ = json.NewEncoder(w).Encode(payload)
+	httpserver.WriteJSON(w, http.StatusOK, response)
 }

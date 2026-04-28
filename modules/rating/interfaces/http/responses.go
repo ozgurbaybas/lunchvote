@@ -2,10 +2,6 @@ package http
 
 import ratingdomain "github.com/ozgurbaybas/lunchvote/modules/rating/domain"
 
-type errorResponse struct {
-	Error string `json:"error"`
-}
-
 type ratingResponse struct {
 	ID           string `json:"id"`
 	RestaurantID string `json:"restaurant_id"`
