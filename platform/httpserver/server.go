@@ -1,7 +1,6 @@
 package httpserver
 
 import (
-	"encoding/json"
 	"net/http"
 
 	"github.com/ozgurbaybas/lunchvote/platform/config"
@@ -20,28 +19,22 @@ func New(
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("GET /health", func(w http.ResponseWriter, r *http.Request) {
-		writeJSON(w, http.StatusOK, healthResponse{Status: "ok"})
+		WriteJSON(w, http.StatusOK, healthResponse{Status: "ok"})
 	})
 
 	for _, register := range registerRoutes {
 		register(mux)
 	}
 
+	handler := Chain(
+		mux,
+		WithRecovery(logg),
+		WithRequestID,
+		WithRequestLogging(logg),
+	)
+
 	return &http.Server{
 		Addr:    cfg.HTTPAddress(),
-		Handler: withLogging(logg, mux),
+		Handler: handler,
 	}
-}
-
-func withLogging(logg *logger.Logger, next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		logg.Info("http request", "method", r.Method, "path", r.URL.Path)
-		next.ServeHTTP(w, r)
-	})
-}
-
-func writeJSON(w http.ResponseWriter, status int, payload any) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(status)
-	_ = json.NewEncoder(w).Encode(payload)
 }
